@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/yandex-cloud/go-genproto/yandex/cloud/compute/v1"
@@ -29,6 +30,7 @@ type Disks struct {
 func main() {
 	folderID := flag.String("folder-id", "", "specify folder id")
 	token := flag.String("token", "", "specify token")
+	instanceNamePrefix := flag.String("instance-name-prefix", "", "specify instances name prefix")
 	flag.Parse()
 
 	ctx := context.Background()
@@ -58,6 +60,12 @@ func main() {
 	t := table.NewWriter()
 	t.AppendHeader(table.Row{"Name", "CPU", "RAM", "Network HDD", "Network SSD"})
 	for _, instance := range instances {
+		if *instanceNamePrefix != "" {
+			if !strings.HasPrefix(instance.GetName(), *instanceNamePrefix) {
+				continue
+			}
+		}
+
 		d := &Disks{}
 		d.Add(instance, disks)
 		t.AppendRow(r.GetRow(instance, d))
