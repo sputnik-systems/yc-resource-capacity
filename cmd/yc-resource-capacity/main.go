@@ -32,6 +32,7 @@ func main() {
 	folderID := flag.String("folder-id", "", "specify folder id")
 	token := flag.String("token", "", "specify token")
 	instanceNamePrefix := flag.String("instance-name-prefix", "", "specify instances name prefix")
+	outputFormat := flag.String("output-format", "table", "specify result output format")
 	flag.Parse()
 
 	ctx := context.Background()
@@ -57,12 +58,44 @@ func main() {
 	instances := listInstancesResponse.GetInstances()
 	disks := listDisksResponse.GetDisks()
 
+	switch *outputFormat {
+	case "csv":
+		printCsvOutput(instances, disks, *instanceNamePrefix)
+	default:
+		printTableOutput(instances, disks, *instanceNamePrefix)
+	}
+}
+
+func printCsvOutput(instances []*compute.Instance, disks []*compute.Disk, prefix string) {
+	for _, instance := range instances {
+		if prefix != "" {
+			if !strings.HasPrefix(instance.GetName(), prefix) {
+				continue
+			}
+		}
+
+		d := &Disks{}
+		d.Add(instance, disks)
+
+		fmt.Printf(
+			"%s,%s,%d,%.2f,%.2f,%.2f\n",
+			instance.GetName(),
+			instance.GetPlatformId(),
+			instance.GetResources().GetCores(),
+			float64(instance.GetResources().GetMemory())/MemCapacity,
+			d.GetNetworkHDD(),
+			d.GetNetworkSSD(),
+		)
+	}
+}
+
+func printTableOutput(instances []*compute.Instance, disks []*compute.Disk, prefix string) {
 	r := &Resources{}
 	t := table.NewWriter()
 	t.AppendHeader(table.Row{"Name", "Platform", "CPU", "RAM", "Network HDD", "Network SSD"})
 	for _, instance := range instances {
-		if *instanceNamePrefix != "" {
-			if !strings.HasPrefix(instance.GetName(), *instanceNamePrefix) {
+		if prefix != "" {
+			if !strings.HasPrefix(instance.GetName(), prefix) {
 				continue
 			}
 		}
