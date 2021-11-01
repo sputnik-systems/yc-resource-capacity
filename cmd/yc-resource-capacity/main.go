@@ -17,8 +17,9 @@ const (
 )
 
 type Resources struct {
-	Cores  int64
-	Memory float64
+	PlatformId string
+	Cores      int64
+	Memory     float64
 	Disks
 }
 
@@ -58,7 +59,7 @@ func main() {
 
 	r := &Resources{}
 	t := table.NewWriter()
-	t.AppendHeader(table.Row{"Name", "CPU", "RAM", "Network HDD", "Network SSD"})
+	t.AppendHeader(table.Row{"Name", "Platform", "CPU", "RAM", "Network HDD", "Network SSD"})
 	for _, instance := range instances {
 		if *instanceNamePrefix != "" {
 			if !strings.HasPrefix(instance.GetName(), *instanceNamePrefix) {
@@ -73,6 +74,7 @@ func main() {
 
 	f := table.Row{
 		"Total",
+		fmt.Sprintf("%s", ""),
 		fmt.Sprintf("%d", r.GetCores()),
 		fmt.Sprintf("%.2f", r.GetMemory()),
 		fmt.Sprintf("%.2f", r.Disks.GetNetworkHDD()),
@@ -108,6 +110,7 @@ func (d *Disks) GetNetworkSSD() float64 {
 }
 
 func (r *Resources) GetRow(instance *compute.Instance, disks *Disks) table.Row {
+	platform := instance.GetPlatformId()
 	cores := instance.GetResources().GetCores()
 	memory := float64(instance.GetResources().GetMemory()) / MemCapacity
 
@@ -115,6 +118,7 @@ func (r *Resources) GetRow(instance *compute.Instance, disks *Disks) table.Row {
 
 	return table.Row{
 		instance.GetName(),
+		fmt.Sprintf("%s", platform),
 		fmt.Sprintf("%d", cores),
 		fmt.Sprintf("%.2f", memory),
 		fmt.Sprintf("%.2f", disks.GetNetworkHDD()),
